@@ -23,23 +23,46 @@
       </tbody>
     </table>
 
-    <!-- Formulier voor toevoegen/bewerken van gebruikers -->
-    <h2>{{ isEditing ? 'Gebruiker Bewerken' : 'Nieuwe Gebruiker Toevoegen' }}</h2>
-    <form @submit.prevent="isEditing ? updateUser() : createUser()">
+    <!-- Create User Form -->
+    <h2>Nieuwe Gebruiker Toevoegen</h2>
+    <form @submit.prevent="createUser">
       <div>
         <label>Gebruikersnaam:</label>
-        <input v-model="userData.username" required />
+        <input v-model="createData.username" required />
+      </div>
+      <div>
+        <label>Wachtwoord:</label>
+        <input type="password" v-model="createData.password" required />
       </div>
       <div>
         <label>Rol:</label>
-        <select v-model="userData.roleId" required>
+        <select v-model="createData.roleId" required>
           <option v-for="role in roles" :key="role.id" :value="role.id">
             {{ role.name }}
           </option>
         </select>
       </div>
-      <button type="submit">{{ isEditing ? 'Bijwerken' : 'Toevoegen' }}</button>
-      <button type="button" @click="resetForm()">Annuleren</button>
+      <button type="submit">Toevoegen</button>
+      <button type="button" @click="resetCreateForm()">Annuleren</button>
+    </form>
+
+    <!-- Update User Form -->
+    <h2 v-if="isEditing">Gebruiker Bewerken</h2>
+    <form v-if="isEditing" @submit.prevent="updateUser">
+      <div>
+        <label>Gebruikersnaam:</label>
+        <input v-model="updateData.username" required />
+      </div>
+      <div>
+        <label>Rol:</label>
+        <select v-model="updateData.roleId" required>
+          <option v-for="role in roles" :key="role.id" :value="role.id">
+            {{ role.name }}
+          </option>
+        </select>
+      </div>
+      <button type="submit">Bijwerken</button>
+      <button type="button" @click="resetUpdateForm()">Annuleren</button>
     </form>
   </div>
 </template>
@@ -52,21 +75,23 @@ export default {
   data() {
     return {
       users: [],
-      userData: {
+      createData: {
         username: '',
-        password: '', // Voeg een veld toe voor het wachtwoord als dat nodig is
-        roleId: null // Rol-ID om de rol van de gebruiker te selecteren
+        password: '',
+        roleId: null
       },
-      roles: [
-        { id: 1, name: 'Role 1' },
-        { id: 2, name: 'Role 2' }
-      ], // Beschikbare rollen
+      updateData: {
+        username: '',
+        roleId: null
+      },
+      roles: [], // Dynamically loaded roles
       userId: null,
       isEditing: false
     };
   },
   created() {
     this.fetchUsers();
+    this.fetchRoles(); // Load roles on component creation
   },
   methods: {
     async fetchUsers() {
@@ -78,11 +103,30 @@ export default {
       }
     },
 
+    async fetchRoles() {
+      try {
+        const response = await axios.get('http://localhost:8080/api/users/roles', { withCredentials: true });
+        this.roles = response.data; // Populate the roles list
+      } catch (error) {
+        console.error("Er is een fout opgetreden bij het ophalen van rollen:", error);
+      }
+    },
+
     async createUser() {
       try {
-        await axios.post('http://localhost:8080/api/users/add', this.userData, { withCredentials: true });
+        const roleId = this.createData.roleId;
+        if (!roleId) {
+          console.error("Role ID is missing. Please select a role.");
+          return;
+        }
+
+        await axios.post(`http://localhost:8080/api/users/add?roleId=${roleId}`, {
+          username: this.createData.username,
+          password: this.createData.password
+        }, { withCredentials: true });
+
         this.fetchUsers();
-        this.resetForm();
+        this.resetCreateForm();
       } catch (error) {
         console.error("Er is een fout opgetreden bij het toevoegen van de gebruiker:", error);
       }
@@ -90,7 +134,7 @@ export default {
 
     editUser(user) {
       this.userId = user.id;
-      this.userData = {
+      this.updateData = {
         username: user.username,
         roleId: this.roles.find(role => role.name === user.roleName)?.id || null
       };
@@ -102,10 +146,20 @@ export default {
         console.error("Geen geldige gebruiker geselecteerd om te bewerken.");
         return;
       }
+
       try {
-        await axios.put(`http://localhost:8080/api/users/${this.userId}`, this.userData, { withCredentials: true });
+        const roleId = this.updateData.roleId; // Capture the selected roleId
+        if (!roleId) {
+          console.error("Role ID is missing. Please select a role.");
+          return;
+        }
+
+        await axios.put(`http://localhost:8080/api/users/${this.userId}?roleId=${roleId}`, {
+          username: this.updateData.username,
+        }, { withCredentials: true });
+
         this.fetchUsers();
-        this.resetForm();
+        this.resetUpdateForm();
       } catch (error) {
         console.error("Er is een fout opgetreden bij het bijwerken van de gebruiker:", error);
       }
@@ -120,10 +174,17 @@ export default {
       }
     },
 
-    resetForm() {
-      this.userData = {
+    resetCreateForm() {
+      this.createData = {
         username: '',
         password: '',
+        roleId: null
+      };
+    },
+
+    resetUpdateForm() {
+      this.updateData = {
+        username: '',
         roleId: null
       };
       this.userId = null;
@@ -134,5 +195,5 @@ export default {
 </script>
 
 <style scoped>
-/* CSS blijft ongewijzigd */
+/* CSS remains unchanged */
 </style>
