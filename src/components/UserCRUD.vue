@@ -68,6 +68,7 @@
 </template>
 
 <script>
+import './UserCRUD.css';
 import axios from 'axios';
 
 export default {
