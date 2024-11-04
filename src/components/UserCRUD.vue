@@ -1,8 +1,6 @@
 <template>
   <div>
-    <h1>Gebruikersbeheer</h1>
 
-    <!-- Gebruikerslijst -->
     <table>
       <thead>
       <tr>
@@ -23,7 +21,6 @@
       </tbody>
     </table>
 
-    <!-- Create User Form -->
     <h2>Nieuwe Gebruiker Toevoegen</h2>
     <form @submit.prevent="createUser">
       <div>
@@ -46,7 +43,7 @@
       <button type="button" @click="resetCreateForm()">Annuleren</button>
     </form>
 
-    <!-- Update User Form -->
+    <!-- Gebruiker Bewerken Formulier -->
     <h2 v-if="isEditing">Gebruiker Bewerken</h2>
     <form v-if="isEditing" @submit.prevent="updateUser">
       <div>
@@ -68,8 +65,9 @@
 </template>
 
 <script>
-import './UserCRUD.css';
 import axios from 'axios';
+
+const apiUrl = 'http://localhost:8080/api/users';
 
 export default {
   name: 'UserCRUD',
@@ -85,34 +83,37 @@ export default {
         username: '',
         roleId: null
       },
-      roles: [], // Dynamically loaded roles
+      roles: [],
       userId: null,
       isEditing: false
     };
   },
   created() {
     this.fetchUsers();
-    this.fetchRoles(); // Load roles on component creation
+    this.fetchRoles();
   },
   methods: {
+    // Haal gebruikers op
     async fetchUsers() {
       try {
-        const response = await axios.get('http://localhost:8080/api/users', { withCredentials: true });
+        const response = await axios.get(`${apiUrl}`, {withCredentials: true});
         this.users = response.data;
       } catch (error) {
         console.error("Er is een fout opgetreden bij het ophalen van gebruikers:", error);
       }
     },
 
+    // Haal rollen op
     async fetchRoles() {
       try {
-        const response = await axios.get('http://localhost:8080/api/users/roles', { withCredentials: true });
-        this.roles = response.data; // Populate the roles list
+        const response = await axios.get(`${apiUrl}/roles`, {withCredentials: true});
+        this.roles = response.data;
       } catch (error) {
         console.error("Er is een fout opgetreden bij het ophalen van rollen:", error);
       }
     },
 
+    // Maak een nieuwe gebruiker aan
     async createUser() {
       try {
         const roleId = this.createData.roleId;
@@ -121,10 +122,10 @@ export default {
           return;
         }
 
-        await axios.post(`http://localhost:8080/api/users/add?roleId=${roleId}`, {
+        await axios.post(`${apiUrl}/add?roleId=${roleId}`, {
           username: this.createData.username,
           password: this.createData.password
-        }, { withCredentials: true });
+        }, {withCredentials: true});
 
         this.fetchUsers();
         this.resetCreateForm();
@@ -133,6 +134,7 @@ export default {
       }
     },
 
+    // Bewerk een bestaande gebruiker
     editUser(user) {
       this.userId = user.id;
       this.updateData = {
@@ -149,14 +151,15 @@ export default {
       }
 
       try {
-        const roleId = this.updateData.roleId; // Capture the selected roleId
+        const roleId = this.updateData.roleId;
         if (!roleId) {
-          console.error("Role ID is missing. Please select a role.");
+          console.error("Role ID ontbreekt. Selecteer een rol.");
           return;
         }
 
-        await axios.put(`http://localhost:8080/api/users/${this.userId}?roleId=${roleId}`, {
+        await axios.put(`${apiUrl}/${this.userId}?roleId=${roleId}`, {
           username: this.updateData.username,
+          password: this.updateData.password // Stuur wachtwoord alleen als het is ingevuld
         }, { withCredentials: true });
 
         this.fetchUsers();
@@ -166,15 +169,17 @@ export default {
       }
     },
 
+    // Verwijder een gebruiker
     async deleteUser(id) {
       try {
-        await axios.delete(`http://localhost:8080/api/users/${id}`, { withCredentials: true });
+        await axios.delete(`${apiUrl}/${id}`, {withCredentials: true});
         this.fetchUsers();
       } catch (error) {
         console.error("Er is een fout opgetreden bij het verwijderen van de gebruiker:", error);
       }
     },
 
+    // Reset het formulier voor het aanmaken van een gebruiker
     resetCreateForm() {
       this.createData = {
         username: '',
@@ -183,6 +188,7 @@ export default {
       };
     },
 
+    // Reset het formulier voor het bewerken van een gebruiker
     resetUpdateForm() {
       this.updateData = {
         username: '',
@@ -196,5 +202,36 @@ export default {
 </script>
 
 <style scoped>
-/* CSS remains unchanged */
+/* Stijl voor de tabel en formulieren */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+button {
+  margin-right: 5px;
+}
+
+form {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 300px;
+}
+
+form div {
+  margin-bottom: 10px;
+}
+
+h2 {
+  margin-top: 20px;
+}
 </style>

@@ -1,11 +1,16 @@
-<script setup>
-
-</script>
-
 <template>
-
+  <div>
+    <h1>Admin Dashboard</h1>
+    <UserCRUD />
+  </div>
 </template>
 
-<style scoped>
+<script>
+import UserCRUD from '@/components/UserCRUD.vue';
 
-</style>
+export default {
+  components: {
+    UserCRUD
+  }
+};
+</script>

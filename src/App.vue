@@ -1,16 +1,15 @@
 <template>
   <div id="app">
-    <UserCRUD />
+    <router-view />
   </div>
 </template>
 
 <script>
-import UserCRUD from './components/UserCRUD.vue';
-
 export default {
-  name: 'App',
-  components: {
-    UserCRUD
-  }
+  name: 'App'
 };
 </script>
+
+<style>
+/* Voeg hier globale stijlen toe */
+</style>
